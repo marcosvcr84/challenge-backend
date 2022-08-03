@@ -13,7 +13,7 @@ datasource db {
 model Transaction {
   id     String  @id @default(uuid())
   accountId   String
-  categoryId   String
+  categoryId  String  
   reference   String 
   amount      String
   currency String

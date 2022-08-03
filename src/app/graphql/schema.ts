@@ -5,7 +5,10 @@ import { makeExecutableSchema } from '@graphql-tools/schema'
 const typeDefs = gql`
   type Query {
     getAllTransactions(page: Int!): [Transaction!]
-    getTransByAccountIdAndRangeDate(accountId: String!, initialDate: String!, finalDate: String!): [Transaction!]
+    getCategory(categoryId: String!): Category!
+    getAccount(accountId: String!): Account!
+    getAllAccounts: [Account!]
+    getTransByAccountIdAndRangeDate(page: Int!, accountId: String!, initialDate: String!, finalDate: String!): [Transaction!]
   }
   type Transaction {
     id: String!
@@ -16,14 +19,22 @@ const typeDefs = gql`
     currency: String!
     date: String!
   }
+  type Category {
+    id: String
+    name: String
+    color: String
+  }
+  type Account {
+    id: String!
+    name: String!
+  }
 `
 
 const resolvers = {
     Query: {
         getAllTransactions: async (_obj: any, args: any, context: Context, _info: any) => {
             const { page } = args;
-            console.log('page', page);
-            const skipNumber = page === 1 ? 0 : (10 * (page -1));
+            const skipNumber = page === 1 ? 0 : (10 * (page - 1));
             const response = await context.prisma.transaction.findMany({
                 take: 10,
                 skip: skipNumber
@@ -31,10 +42,34 @@ const resolvers = {
 
             return response
         },
+        getCategory: async (_obj: any, args: any, context: Context, _info: any) => {
+            const { categoryId } = args;
+            const category = await context.prisma.category.findUnique({
+                where: {
+                    id: categoryId
+                }
+            })
+            return category
+        },
+        getAccount: async (_obj: any, args: any, context: Context, _info: any) => {
+            const { accountId } = args;
+            const account = await context.prisma.account.findUnique({
+                where: {
+                    id: accountId
+                }
+            })
+            return account
+        },
+        getAllAccounts: async (_obj: any, args: any, context: Context, _info: any) => {
+            const accounts = await context.prisma.account.findMany({});
+            return accounts
+        },
         getTransByAccountIdAndRangeDate: async (_obj: any, args: any, context: Context, _info: any) => {
-            const { accountId, initialDate, finalDate } = args;
-
+            const { page, accountId, initialDate, finalDate } = args;
+            const skipNumber = page === 1 ? 0 : (10 * (page - 1));
             const response = await context.prisma.transaction.findMany({
+                take: 10,
+                skip: skipNumber,
                 where: {
                     accountId: accountId,
                     date: {
